@@ -9,6 +9,7 @@ import 'package:lib_barcode/services/ip.dart';
 setLibraryDetails(Map<String, dynamic> message) async {
   final SendPort sendPort = message['sendPort'];
   final rollno = message['rollno'];
+  // await Future.delayed(Duration(seconds: 2));
   try {
     var response = await http
         .get(Uri.parse("$ip/api/library/getDataOnScan?rollno=$rollno"));
@@ -40,6 +41,8 @@ addNewBook(Map<String, dynamic> message) async {
     );
     if (response.statusCode == 200) {
       sendPort.send("Added Success fully");
+    } else if (response.statusCode == 400) {
+      sendPort.send('Already exists');
     } else {
       sendPort.send("Failed to fetch data: ${response.statusCode}");
     }

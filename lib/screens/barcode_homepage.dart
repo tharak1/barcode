@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lib_barcode/screens/barcode_detailspage.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
+import 'package:vibration/vibration.dart';
 
 class Barcode_HomePage extends StatefulWidget {
   const Barcode_HomePage({Key? key}) : super(key: key);
@@ -32,6 +33,8 @@ class _Barcode_HomePageState extends State<Barcode_HomePage> {
                 );
                 setState(() {
                   if (res is String) {
+                    Vibration.vibrate(duration: 100);
+
                     result = res;
                     // Navigate to the details screen when a barcode is scanned
                     Navigator.push(

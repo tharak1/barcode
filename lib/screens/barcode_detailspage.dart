@@ -1,11 +1,13 @@
 import 'dart:isolate';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:lib_barcode/models/libModel.dart';
 import 'package:lib_barcode/services/functions.dart';
 import 'package:lib_barcode/widgets/details_card.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
 import 'package:intl/intl.dart';
+import 'package:vibration/vibration.dart';
 
 class BarcodeDetailsPage extends StatefulWidget {
   final String barcodeResult;
@@ -125,7 +127,7 @@ class _BarcodeDetailsPageState extends State<BarcodeDetailsPage> {
               booksTakenData: []);
         });
         fetchdata();
-      } else if (message is String) {
+      } else {
         debugPrint("Error: $message");
         setState(() {
           isError = true;
@@ -172,7 +174,23 @@ class _BarcodeDetailsPageState extends State<BarcodeDetailsPage> {
               booksTakenData: []);
         });
         fetchdata();
-      } else if (message is String) {
+      } else if (message == 'Already exists') {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text("Warning"),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text("cancel"),
+              ),
+            ],
+          ),
+        );
+      } else {
         debugPrint("Error: $message");
         setState(() {
           isError = true;
@@ -210,98 +228,118 @@ class _BarcodeDetailsPageState extends State<BarcodeDetailsPage> {
               ? const Center(
                   child: CircularProgressIndicator.adaptive(),
                 )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 2, 8, 0),
+                      child: Text(
                         'Details for Barcode: ${widget.barcodeResult}',
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
-                      const SizedBox(height: 20),
-                      DetailsCard(lib: data),
-                      const SizedBox(height: 20),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: data.booksTaken.length,
-                        itemBuilder: (context, index) => Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              child: Text("${index + 1}"),
-                            ),
-                            title: Text(data.booksTakenData[index].BookName),
-                            subtitle: Text(
-                              'Borrowed: ${DateFormat('d MMMM y').format(DateTime.parse(data.dateTaken[index]))}\n Days Left: ${14 - (DateTime.now().difference(DateTime.parse(data.dateTaken[index]))).inDays}',
-                            ),
-                            trailing: Wrap(
-                              spacing: 12,
-                              children: <Widget>[
-                                IconButton(
-                                  icon: const Icon(Icons.refresh),
-                                  onPressed: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (ctx) => AlertDialog(
-                                        title: const Text("Confirmation"),
-                                        content: Text(
-                                            "Do you want to Update Date for book - \n${data.booksTakenData[index].BookName} \nfor the user "),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                            },
-                                            child: const Text("cancel"),
-                                          ),
-                                          ElevatedButton(
+                    ),
+                    const SizedBox(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 2, 8, 0),
+                      child: DetailsCard(lib: data),
+                    ),
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 5, 8, 20),
+                        child: ListView.builder(
+                          scrollDirection: Axis.vertical,
+                          shrinkWrap: true,
+                          itemCount: data.booksTaken.length,
+                          itemBuilder: (context, index) => Card(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                child: Text("${index + 1}"),
+                              ),
+                              title: Text(
+                                  '${data.booksTakenData[index].BookName}\n${data.booksTaken[index]}'),
+                              subtitle: Text(
+                                'Borrowed: ${DateFormat('d MMMM y').format(DateTime.parse(data.dateTaken[index]))}\n Days Left: ${14 - (DateTime.now().difference(DateTime.parse(data.dateTaken[index]))).inDays}',
+                              ),
+                              trailing: Wrap(
+                                spacing: 12,
+                                children: <Widget>[
+                                  IconButton(
+                                    icon: const Icon(Icons.refresh),
+                                    onPressed: () {
+                                      Vibration.vibrate(duration: 100);
+
+                                      showDialog(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: const Text("Confirmation"),
+                                          content: Text(
+                                              "Do you want to Update Date for book - \n${data.booksTakenData[index].BookName} \nfor the user "),
+                                          actions: [
+                                            TextButton(
                                               onPressed: () {
-                                                updateDateForBook(
-                                                    data.booksTaken[index]);
                                                 Navigator.pop(context);
                                               },
-                                              child: const Text("Ok"))
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete),
-                                  onPressed: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (ctx) => AlertDialog(
-                                        title: const Text("Confirmation"),
-                                        content: Text(
-                                            "Do you want to delete book - \n${data.booksTakenData[index].BookName} \nfor the user "),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                            },
-                                            child: const Text("cancel"),
-                                          ),
-                                          ElevatedButton(
+                                              child: const Text("cancel"),
+                                            ),
+                                            ElevatedButton(
+                                                onPressed: () {
+                                                  Vibration.vibrate(
+                                                      duration: 100);
+
+                                                  updateDateForBook(
+                                                      data.booksTaken[index]);
+                                                  Navigator.pop(context);
+                                                },
+                                                child: const Text("Ok"))
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete),
+                                    onPressed: () {
+                                      Vibration.vibrate(duration: 100);
+
+                                      showDialog(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: const Text("Confirmation"),
+                                          content: Text(
+                                              "Do you want to delete book - \n${data.booksTakenData[index].BookName} \nfor the user "),
+                                          actions: [
+                                            TextButton(
                                               onPressed: () {
-                                                deleteUserBook(
-                                                    data.booksTaken[index]);
                                                 Navigator.pop(context);
                                               },
-                                              child: const Text("Ok"))
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
+                                              child: const Text("cancel"),
+                                            ),
+                                            ElevatedButton(
+                                                onPressed: () {
+                                                  Vibration.vibrate(
+                                                      duration: 100);
+
+                                                  deleteUserBook(
+                                                      data.booksTaken[index]);
+                                                  Navigator.pop(context);
+                                                },
+                                                child: const Text("Ok"))
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addNewBook,
@@ -312,19 +350,40 @@ class _BarcodeDetailsPageState extends State<BarcodeDetailsPage> {
   }
 
   Future<void> _addNewBook() async {
-    final scannedBookName = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const SimpleBarcodeScannerPage(),
-      ),
-    );
+    if (data.booksTaken.length < 6) {
+      final scannedBookName = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SimpleBarcodeScannerPage(),
+        ),
+      );
 
-    if (scannedBookName == null ||
-        (scannedBookName is! String) ||
-        scannedBookName.isEmpty) {
-      return;
+      if (scannedBookName == null ||
+          (scannedBookName is! String) ||
+          scannedBookName.isEmpty) {
+        return;
+      } else {
+        Vibration.vibrate(duration: 100);
+        addUserBook(scannedBookName);
+      }
     } else {
-      addUserBook(scannedBookName);
+      Vibration.vibrate(duration: 100);
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text("Warning"),
+          content: const Text("Limit exceeded there are 6 books already"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text("cancel"),
+            ),
+          ],
+        ),
+      );
     }
   }
 }
